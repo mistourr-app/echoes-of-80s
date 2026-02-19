@@ -55,16 +55,30 @@ let isGameOver = false;
 let cycleFinished = false;
 let charlieInfoRevealed = false;
 let assistantCrackedAtTwilight = false;
+let charlieKilledOnRow = -1; // -1 означает, что Чарли еще жив или убит не на прошлом ходу
 
 function getLivingEnemiesInCell(time, locIdx) {
     let enemies = [];
-    if (locIdx === 0 && (time === "ДЕНЬ" || time === "СУМЕРКИ" || time === "ВЕЧЕР")) enemies.push("H");
-    if (locIdx === 1) {
-        if (time === "СУМЕРКИ" || time === "ВЕЧЕР") enemies.push("F");
-        if (time === "СУМЕРКИ") enemies.push("K");
+    const isRevengeTurn = charlieKilledOnRow === currentRow + 1;
+
+    if (isRevengeTurn) {
+        // На следующий ход после убийства Чарли все собираются на Базе
+        if (locIdx === 3) {
+            if (!killed.H) enemies.push("H");
+            if (!killed.F) enemies.push("F");
+            if (!killed.K) enemies.push("K");
+        }
+        // Остальные локации пусты
+    } else {
+        // Стандартное расписание
+        if (locIdx === 0 && (time === "ДЕНЬ" || time === "СУМЕРКИ" || time === "ВЕЧЕР")) enemies.push("H");
+        if (locIdx === 1) {
+            if (time === "СУМЕРКИ" || time === "ВЕЧЕР") enemies.push("F");
+            if (time === "СУМЕРКИ") enemies.push("K");
+        }
+        if (locIdx === 2 && time !== "СУМЕРКИ") enemies.push("K");
+        if (locIdx === 3 && (time === "ДЕНЬ" || time === "НОЧЬ")) enemies.push("C");
     }
-    if (locIdx === 2 && time !== "СУМЕРКИ") enemies.push("K");
-    if (locIdx === 3 && (time === "ДЕНЬ" || time === "НОЧЬ")) enemies.push("C");
     return enemies.filter(e => !killed[e]);
 }
 
@@ -125,6 +139,7 @@ function triggerGameOver(reason) {
 function updateKillStatus(target, row, loc) {
     killed[target] = true;
     killLocations.push({ row, loc });
+    if (target === 'C') charlieKilledOnRow = row;
     document.getElementById(`key-${target}`).classList.add('active');
 }
 
@@ -149,8 +164,12 @@ function processMove(r, c) {
     if (c === 0) { // ЛАБОРАТОРИЯ
         if (currentTime === "НОЧЬ") {
             addLog(t("lab.nightNote"), "text-zinc-400");
+        } else if (charlieKilledOnRow === currentRow + 1) {
+            // Если сейчас ход "мести", лаборатория пуста и открыта
+            addLog(t("lab.revengeEmpty"), "text-zinc-400");
         } else {
-            addLog(t("lab.dayDoor"), "text-zinc-400");
+            // Стандартная логика для лаборатории
+            addLog(t("lab.dayDoor"), "text-zinc-400"); // Дверь заперта
         }
     }
     else if (c === 1) { // ЛОГОВО ХАКЕРА
