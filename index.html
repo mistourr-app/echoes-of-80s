@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Echoes of 80s: Echoes of 80s</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --neon-green: #00ff41;
+            --neon-magenta: #ff00ff;
+            --bg-dark: #020202;
+            --error-red: #ef4444; 
+            --border-day: #fbbf24;      
+            --border-twilight: #f97316; 
+            --border-evening: #a855f7;  
+            --border-night: #3b82f6;    
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: var(--bg-dark);
+            color: var(--neon-green);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: fixed;
+        }
+
+        .main-wrapper {
+            width: 100%;
+            max-width: 1100px;
+            min-width: 280px;
+            height: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            box-sizing: border-box;
+            gap: 10px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+            padding-bottom: 5px;
+            flex-shrink: 0;
+        }
+
+        .boss-area {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #1a1a1a;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            transition: all 0.5s ease;
+        }
+
+        .boss-area.final-active {
+            border-color: var(--neon-magenta);
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+            background: rgba(255, 0, 255, 0.05);
+            cursor: pointer;
+        }
+
+        .boss-keys-container {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 5px 0;
+        }
+
+        .boss-key-indicator {
+            font-size: 18px;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .boss-key-indicator.active {
+            color: var(--neon-magenta);
+            text-shadow: 0 0 10px var(--neon-magenta);
+            border-color: var(--neon-magenta);
+            background: rgba(255, 0, 255, 0.1);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 6px;
+            flex-grow: 1;
+        }
+
+        .cell { 
+            border: 2px solid rgba(255, 255, 255, 0.1); 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            background: #111;
+            transition: all 0.2s ease;
+            padding: 4px;
+            text-align: center;
+        }
+
+        .cell.active-row { border-width: 2px; opacity: 1; }
+        .cell.locked { opacity: 0.3; cursor: default; pointer-events: none; }
+        
+        .cell[data-loc="0"] { background: #0a1b3a; } 
+        .cell[data-loc="1"] { background: #1a0a2a; } 
+        .cell[data-loc="2"] { background: #1a1a1a; } 
+        .cell[data-loc="3"] { background: #2a0a0a; } 
+
+        .cell.day { border-color: var(--border-day); }
+        .cell.twilight { border-color: var(--border-twilight); }
+        .cell.evening { border-color: var(--border-evening); }
+        .cell.night { border-color: var(--border-night); }
+
+        .skull-icon {
+            font-size: 18px;
+            margin-top: 2px;
+            filter: drop-shadow(0 0 8px var(--neon-magenta));
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .modal-overlay { /* Общий класс для модальных окон */
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px; /* Добавлено для отступа */
+        }
+
+        .modal-content {
+            border: 3px solid var(--error-red);
+            background: #000;
+            max-width: 400px;
+            width: 100%;
+            padding: 30px;
+            text-align: center;
+        }
+
+        #terminal { 
+            background: #000; 
+            border: 1px solid var(--neon-green);
+            height: 132px; /* +20% к прежним ~110px */
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 12px; /* примерно +10% к 11px */
+            flex-shrink: 0;
+        }
+
+        /* Неоновый скроллбар терминала */
+        #terminal::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #terminal::-webkit-scrollbar-track {
+            background: #020202;
+        }
+
+        #terminal::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 65, 0.5);
+            box-shadow: 0 0 8px rgba(0, 255, 65, 0.8);
+            border-radius: 999px;
+        }
+
+        #terminal::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 65, 0.9);
+        }
+
+        .log-entry {
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+        }
+
+        .log-entry.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .loc-label { 
+            font-size: 9px; 
+            line-height: 1.1;
+            font-weight: bold; 
+            color: #fff; 
+            opacity: 0.9;
+            text-transform: uppercase;
+            word-break: break-word;
+        }
+
+        #boss-label {
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: var(--neon-magenta);
+            display: none;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(0, 255, 65, 0.15);
+            padding-top: 5px;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title" class="text-3xl font-black mb-4 uppercase text-red-500">СИСТЕМА СБОЯ</h2>
+            <p id="modal-text" class="text-sm text-zinc-400 mb-8 leading-relaxed"></p>
+            <button onclick="location.reload()" class="w-full border-2 border-red-500 py-4 text-red-500 font-bold hover:bg-red-500 hover:text-black transition-all uppercase">
+                ПЕРЕЗАГРУЗИТЬ ЦИКЛ
+            </button>
+        </div>
+    </div>
+
+    <!-- Новое модальное окно для подтверждения сброса -->
+    <div id="reset-confirm-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="reset-confirm-title" class="text-3xl font-black mb-4 uppercase text-red-500"></h2>
+            <p id="reset-confirm-text" class="text-sm text-zinc-400 mb-8 leading-relaxed"></p>
+            <div class="flex justify-around gap-4">
+                <button id="reset-confirm-yes" class="w-1/2 border-2 border-red-500 py-4 text-red-500 font-bold hover:bg-red-500 hover:text-black transition-all uppercase text-sm">
+                    <!-- Текст будет установлен JS -->
+                </button>
+                <button id="reset-confirm-no" class="w-1/2 border-2 border-zinc-500 py-4 text-zinc-500 font-bold hover:bg-zinc-500 hover:text-black transition-all uppercase text-sm">
+                    <!-- Текст будет установлен JS -->
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="main-wrapper">
+        <div class="header">
+            <div class="flex flex-col">
+                <span class="text-[10px] text-zinc-500 font-black uppercase italic">CITIZEN_OS v8.4</span>
+                <div id="time-display" class="text-lg font-black italic" style="color: var(--border-day);">ДЕНЬ</div>
+            </div>
+            <div class="text-right">
+                <span id="step-info" class="text-[10px] text-zinc-500 uppercase">ЭТАП: 1 / 4</span>
+            </div>
+        </div>
+
+        <div id="terminal">
+            <div id="terminal-content" class="space-y-1"></div>
+        </div>
+
+        <!-- Теперь эта область становится кликабельной в конце игры -->
+        <div class="boss-area" id="boss-trigger" onclick="checkFinalVictory()">
+            <div id="target-header" class="text-[10px] text-zinc-500 uppercase mb-1"></div>
+            <div id="boss-label" class="font-black mb-2 animate-pulse"></div>
+            <div class="boss-keys-container">
+                <div id="key-H" class="boss-key-indicator">H</div>
+                <div id="key-F" class="boss-key-indicator">F</div>
+                <div id="key-K" class="boss-key-indicator">K</div>
+                <div id="key-C" class="boss-key-indicator">C</div>
+            </div>
+        </div>
+
+        <div id="grid" class="grid-container"></div>
+
+        <div class="footer">
+            <div id="footer-left" class="text-[9px] text-zinc-600 uppercase tracking-[0.2em] flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"></div>
+            <div id="footer-center" class="text-[9px] text-zinc-600 uppercase tracking-[0.2em] text-center mx-4 flex flex-col items-center">
+                <div id="emergency-message" class="mb-1 whitespace-nowrap"></div>
+                <button id="reset-cycle-btn" class="border-2 border-zinc-600 py-1 px-4 text-zinc-600 font-bold hover:bg-zinc-600 hover:text-black transition-all uppercase text-[8px] whitespace-nowrap"></button>
+            </div>
+            <div id="footer-right" class="text-[9px] text-zinc-600 uppercase tracking-[0.2em] text-right flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"></div>
+        </div>
+    </div>
+
+    <script src="text.ru.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
