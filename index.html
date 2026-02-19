@@ -120,21 +120,47 @@
         }
 
         .cell.active-row { border-width: 2px; opacity: 1; }
-        .cell.locked { opacity: 0.3; cursor: default; pointer-events: none; }
+        .cell.locked { 
+            cursor: default; 
+            pointer-events: none; 
+        }
+
+        /* Новый способ затемнения: добавляем псевдо-элемент как тёмный слой,
+           вместо того чтобы делать всю ячейку прозрачной. */
+        .cell.locked::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 2px; /* Скругляем под родителя */
+        }
         
         .cell[data-loc="0"] { background: #0a1b3a; } 
         .cell[data-loc="1"] { background: #1a0a2a; } 
         .cell[data-loc="2"] { background: #1a1a1a; } 
         .cell[data-loc="3"] { background: #2a0a0a; } 
 
-        .cell.day { border-color: var(--border-day); }
-        .cell.twilight { border-color: var(--border-twilight); }
-        .cell.evening { border-color: var(--border-evening); }
-        .cell.night { border-color: var(--border-night); }
+        /* Применяем яркие рамки только для ячеек в активном ряду */
+        .cell.active-row.day { border-color: var(--border-day); }
+        .cell.active-row.twilight { border-color: var(--border-twilight); }
+        .cell.active-row.evening { border-color: var(--border-evening); }
+        .cell.active-row.night { border-color: var(--border-night); }
 
+        /* Стиль для ячейки, где был игрок */
         .cell.player-location {
-            box-shadow: inset 0 0 15px rgba(0, 255, 65, 0.4);
             border-color: var(--neon-green);
+        }
+
+        .player-avatar {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            font-size: 24px; /* Увеличен размер аватара */
+            color: var(--neon-green);
+            text-shadow: 0 0 10px var(--neon-green);
+            /* Теперь аватар будет ярким, т.к. родитель не прозрачный.
+               Z-index нужен, чтобы он был поверх затемняющего слоя. */
+            z-index: 5;
         }
 
         .skull-icon {
@@ -142,6 +168,7 @@
             margin-top: 2px;
             filter: drop-shadow(0 0 8px var(--neon-magenta));
             animation: pulse 1.5s infinite;
+            z-index: 5; /* Поднимаем иконку черепа над затемнением */
         }
 
         @keyframes pulse {
@@ -218,6 +245,7 @@
             opacity: 0.9;
             text-transform: uppercase;
             word-break: break-word;
+            z-index: 5; /* Поднимаем текст над затемнением */
         }
 
         #boss-label {

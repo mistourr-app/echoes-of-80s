@@ -95,12 +95,17 @@ function renderGrid() {
             cell.dataset.row = r;
             cell.dataset.loc = c;
             
-            const isPlayerHere = playerPath.find(p => p.row === r && p.loc === c);
-            if (isPlayerHere) {
+            let content = `<span class="loc-label">${LOC_NAMES[c]}</span>`;
+            
+            // Проверяем, была ли эта ячейка посещена
+            if (playerPath.find(p => p.row === r && p.loc === c)) {
                 cell.classList.add('player-location');
             }
-
-            let content = `<span class="loc-label">${LOC_NAMES[c]}</span>`;
+            // Аватар добавляем только на клетку последнего хода
+            const lastMove = playerPath.length > 0 ? playerPath[playerPath.length - 1] : null;
+            if (lastMove && lastMove.row === r && lastMove.loc === c) {
+                content += `<span class="player-avatar">👤</span>`;
+            }
             
             const wasKillHere = killLocations.find(k => k.row === r && k.loc === c);
             if (wasKillHere) {
