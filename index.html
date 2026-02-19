@@ -25,11 +25,9 @@
             color: var(--neon-green);
             margin: 0;
             display: flex;
-            flex-direction: column;
             height: 100dvh; /* Изменено с vh на dvh для корректной высоты на мобильных устройствах */
             width: 100vw;
             overflow: hidden;
-            position: fixed;
         }
 
         .main-wrapper {
@@ -103,6 +101,7 @@
             grid-template-rows: repeat(4, 1fr);
             gap: 6px;
             flex-grow: 1;
+            min-height: 0; /* Важное исправление для flexbox, чтобы сетка могла сжиматься */
         }
 
         .cell { 
@@ -168,10 +167,11 @@
         #terminal { 
             background: #000; 
             border: 1px solid var(--neon-green);
-            height: 132px; /* +20% к прежним ~110px */
+            height: 15vh; /* Адаптивная высота, зависящая от экрана */
+            max-height: 132px; /* Ограничение максимальной высоты на больших экранах */
             overflow-y: auto;
             padding: 10px;
-            font-size: 12px; /* примерно +10% к 11px */
+            font-size: 12px;
             flex-shrink: 0;
         }
 
