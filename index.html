@@ -155,20 +155,19 @@
             position: absolute;
             bottom: 4px;
             right: 4px;
-            font-size: 24px; /* Увеличен размер аватара */
-            color: var(--neon-green);
-            text-shadow: 0 0 10px var(--neon-green);
-            /* Теперь аватар будет ярким, т.к. родитель не прозрачный.
-               Z-index нужен, чтобы он был поверх затемняющего слоя. */
+            width: 24px;
+            height: 24px;
+            filter: drop-shadow(0 0 8px var(--neon-green));
             z-index: 5;
         }
 
         .skull-icon {
-            font-size: 18px;
-            margin-top: 2px;
+            width: 20px;
+            height: 20px;
+            margin-top: 4px; /* Небольшая коррекция положения */
             filter: drop-shadow(0 0 8px var(--neon-magenta));
             animation: pulse 1.5s infinite;
-            z-index: 5; /* Поднимаем иконку черепа над затемнением */
+            z-index: 5;
         }
 
         @keyframes pulse {

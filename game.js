@@ -104,12 +104,12 @@ function renderGrid() {
             // Аватар добавляем только на клетку последнего хода
             const lastMove = playerPath.length > 0 ? playerPath[playerPath.length - 1] : null;
             if (lastMove && lastMove.row === r && lastMove.loc === c) {
-                content += `<span class="player-avatar">\u{1F464}</span>`; // Замена '👤' на Unicode
+                content += `<img src="./assets/avatar.png" class="player-avatar" alt="Player">`;
             }
             
             const wasKillHere = killLocations.find(k => k.row === r && k.loc === c);
             if (wasKillHere) {
-                content += `<span class="skull-icon">\u{1F480}</span>`; // Замена '💀' на Unicode
+                content += `<img src="./assets/skull.png" class="skull-icon" alt="Kill">`;
             }
             
             cell.innerHTML = content;
