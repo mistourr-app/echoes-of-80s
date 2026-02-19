@@ -49,6 +49,7 @@ const TIME_COLORS = ["#fbbf24", "#f97316", "#a855f7", "#3b82f6"];
 
 let currentRow = 3;
 let killed = { H: false, F: false, K: false, C: false };
+let playerPath = []; // Новый массив для отслеживания пути игрока
 let killLocations = [];
 let hasLabCode = false;
 let isGameOver = false;
@@ -94,6 +95,11 @@ function renderGrid() {
             cell.dataset.row = r;
             cell.dataset.loc = c;
             
+            const isPlayerHere = playerPath.find(p => p.row === r && p.loc === c);
+            if (isPlayerHere) {
+                cell.classList.add('player-location');
+            }
+
             let content = `<span class="loc-label">${LOC_NAMES[c]}</span>`;
             
             const wasKillHere = killLocations.find(k => k.row === r && k.loc === c);
@@ -147,6 +153,9 @@ function processMove(r, c) {
     if (isGameOver || cycleFinished) return;
     const timeIdx = 3 - r;
     const currentTime = TIMES[timeIdx];
+
+    // Сохраняем ход игрока
+    playerPath.push({ row: r, loc: c });
 
     const activeEnemies = getLivingEnemiesInCell(currentTime, c);
     
