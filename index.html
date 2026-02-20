@@ -316,7 +316,12 @@
             </div>
             <div class="text-right flex flex-col items-end">
                 <span id="step-info" class="text-[10px] text-zinc-500 uppercase">ЭТАП: 1 / 4</span>
-                <button id="debug-wipe-btn" class="mt-1 text-[8px] uppercase border border-red-500/50 text-red-500/50 px-2 py-0.5 rounded-sm hover:bg-red-500 hover:text-black transition-all">WIPE SAVE</button>
+                <div class="flex items-center gap-2 mt-1">
+                    <button id="music-toggle-btn" class="text-zinc-400 hover:text-white transition-colors" title="Вкл/Выкл музыку">
+                        <!-- Иконка будет добавлена через JS -->
+                    </button>
+                    <button id="debug-wipe-btn" class="text-[8px] uppercase border border-red-500/50 text-red-500/50 px-2 py-0.5 rounded-sm hover:bg-red-500 hover:text-black transition-all">WIPE SAVE</button>
+                </div>
             </div>
         </div>
 
@@ -372,6 +377,8 @@
         }
     </style>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+    <script src="./audio.js"></script>
     <script src="./text.ru.js"></script>
     <script src="./game.js"></script>
 </body>

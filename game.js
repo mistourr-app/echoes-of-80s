@@ -45,6 +45,7 @@ const resetConfirmNo = document.getElementById('reset-confirm-no');
 const inventoryDisplay = document.getElementById('inventory-display');
 const inventoryItems = document.getElementById('inventory-items');
 const debugWipeBtn = document.getElementById('debug-wipe-btn');
+const musicToggleBtn = document.getElementById('music-toggle-btn');
 
 const LOC_NAMES = ["Лаборатория", "Логово Хакера", "Улицы", "База"];
 const TIMES = ["ДЕНЬ", "СУМЕРКИ", "ВЕЧЕР", "НОЧЬ"];
@@ -260,6 +261,7 @@ function checkFinalVictory() {
         modalTitle.style.color = "#00ff41";
         modalText.innerText = t("system.bossAllKilledText");
         modal.style.display = "flex";
+        soundManager.playEffect('game_over_victory', 0.8);
 
         // Финальный штрих: стираем все данные после полной победы
         localStorage.removeItem('echoesOf80s_save');
@@ -274,12 +276,14 @@ function triggerGameOver(reason) {
     modalTitle.innerText = t("system.modalFailureTitle");
     modalText.innerText = reason;
     modal.style.display = "flex";
+    soundManager.playEffect('game_over_fail');
 }
 
 function updateKillStatus(target, row, loc) {
     killed[target] = true;
     killLocations.push({ row, loc });
     if (target === 'C') charlieKilledOnRow = row;
+    soundManager.playEffect('kill_success');
     document.getElementById(`key-${target}`).classList.add('active');
 }
 
@@ -287,6 +291,8 @@ function processMove(r, c) {
     if (isGameOver || cycleFinished) return;
     const timeIdx = 3 - r;
     const currentTime = TIMES[timeIdx];
+
+    soundManager.playEffect('ui_click', 0.5);
 
     // Сохраняем ход игрока
     playerPath.push({ row: r, loc: c });
@@ -314,6 +320,7 @@ function processMove(r, c) {
             if (isRevengeTurn && !isHenriettaInside && !persistentState.solvedClues.labCode) {
                 // "Ход мести": Генриетта ушла в спешке, оставив дверь открытой. Находим код.
                 persistentState.solvedClues.labCode = true;
+                soundManager.playEffect('info_discover');
                 savePersistentState();
                 addLog(t("lab.findCodeNote"), "text-amber-400 font-bold");
             } else if (isRevengeTurn && !isHenriettaInside && persistentState.solvedClues.labCode) {
@@ -331,6 +338,7 @@ function processMove(r, c) {
                 addLog(t("lab.dayDoor"), "text-zinc-400");
                 if (!persistentState.solvedClues.labCode) {
                     persistentState.clues.labCode = true;
+                    soundManager.playEffect('info_discover', 0.4);
                     savePersistentState(); // Сохраняем, чтобы задача осталась после перезагрузки
                 }
             }
@@ -362,6 +370,7 @@ function processMove(r, c) {
                 persistentState.solvedClues.fionaPCPassword = true;
                 persistentState.information.fionaPassword = "ECHO_77";
                 updateKillStatus('F', r, c);
+                soundManager.playEffect('info_discover');
                 savePersistentState();
             // Сценарий 2: Убийство скорбящей Фионы ночью
             } else if (sessionState.karlDiedInShootout && currentTime === "НОЧЬ") {
@@ -386,12 +395,14 @@ function processMove(r, c) {
                 if (currentTime === "ДЕНЬ") sessionState.karlWarned = true;
                 if (!persistentState.information.canWarnKarl) {
                     persistentState.information.canWarnKarl = true;
+                    soundManager.playEffect('info_discover');
                     savePersistentState();
                 }
             } else {
                 addLog(t("lair.pcPasswordChange"), "text-blue-400");
                 sessionState.fionaPasswordChangeInitiatedOnRow = r;
                 persistentState.clues.fionaPCPassword = true;
+                soundManager.playEffect('info_discover', 0.4);
                 savePersistentState();
             }
         }
@@ -445,16 +456,20 @@ function processMove(r, c) {
             updateKillStatus('C', r, c);
             persistentState.information.revengeImminent = true;
             persistentState.information.charlieSpying = true;
+            soundManager.playEffect('info_discover');
             savePersistentState();
         } else if (!killed.C && isAssistantTime) {
             if (assistantCrackedAtTwilight && currentTime === "ВЕЧЕР") {
                 addLog(t("base.assistantEmptyEvening"), "text-zinc-500");
                 nextStep();
                 return;
-            }
+            } 
             addLog(t("base.assistantInterrogatedTwilight"), "text-zinc-500");
-            persistentState.information.charlieSpying = true;
-            savePersistentState();
+            if (!persistentState.information.charlieSpying) {
+                persistentState.information.charlieSpying = true;
+                soundManager.playEffect('info_discover');
+                savePersistentState();
+            }
             if (currentTime === "СУМЕРКИ") assistantCrackedAtTwilight = true;
         } else if (killed.C && isAssistantTime && !persistentState.information.charlieSpying) {
             addLog(t("base.assistantPanic"), "text-zinc-500");
@@ -519,6 +534,23 @@ function addLog(msg, color = "text-green-500") {
     });
 }
 
+function setupAudioControls() {
+    const iconVolumeOn = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>`;
+    const iconVolumeOff = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd" /><path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>`;
+
+    function updateIcon(isMuted) {
+        musicToggleBtn.innerHTML = isMuted ? iconVolumeOff : iconVolumeOn;
+    }
+
+    // Устанавливаем начальную иконку, основываясь на том, играет ли музыка
+    updateIcon(!soundManager.sounds.ambiance?.playing());
+
+    musicToggleBtn.onclick = () => {
+        const isMuted = soundManager.toggleAmbiance();
+        updateIcon(isMuted);
+    };
+}
+
 window.onload = () => {
     // Загружаем постоянный прогресс при старте игры
     loadPersistentState();
@@ -543,7 +575,11 @@ window.onload = () => {
     resetConfirmNo.innerText = t("system.resetConfirmNo");
 
     resetCycleBtn.onclick = () => { resetConfirmModal.style.display = "flex"; };
-    resetConfirmYes.onclick = () => { location.reload(); };
+    resetConfirmYes.onclick = () => {
+        soundManager.playEffect('cycle_reset');
+        // Небольшая задержка, чтобы звук успел проиграться перед перезагрузкой
+        setTimeout(() => location.reload(), 300);
+    };
     resetConfirmNo.onclick = () => { resetConfirmModal.style.display = "none"; };
 
     // --- DEBUG ---
@@ -552,9 +588,15 @@ window.onload = () => {
         location.reload();
     };
 
+    // Настраиваем кнопку управления музыкой
+    setupAudioControls();
+
     // Рендерим поле
     renderGrid();
 
     // Стартовое системное сообщение в терминале
     addLog(t("system.bootMessage"), "text-zinc-500");
+
+    // Запускаем фоновую музыку
+    soundManager.playAmbiance();
 };
