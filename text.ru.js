@@ -42,7 +42,7 @@ window.GAME_TEXT_RU = {
     infoCharlieSpying: "Инфо: Чарли следит за Фионой и Карлом.",
     infoCanWarnKarl: "Инфо: С ПК Фионы можно влиять на Карла.",
     infoRevengeImminent:
-      "Инфо: Убийство Чарли вызвало тревогу. Остальные цели соберутся на Базе.",
+      "Инфо: Убийство Чарли вызывает тревогу. Остальные цели вызваны на Базу.",
 
     inventoryFionaNeedsPassword: "ПК Фионы: Нужен пароль",
     inventoryFionaPasswordFound: "ПК Фионы: Пароль получен",
