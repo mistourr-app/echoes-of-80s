@@ -78,6 +78,7 @@ let persistentState = {
         charlieSpying: false,
         fionaPassword: null,
         canWarnKarl: false, // Знание о том, что можно предупредить Карла
+        revengeImminent: false, // Знание о том, что месть скоро начнется
     }
 };
 
@@ -146,6 +147,13 @@ function renderInventory() {
         const itemEl = document.createElement('div');
         itemEl.className = 'py-1 px-2 bg-zinc-800 border border-zinc-600 text-zinc-300 rounded-sm text-[11px]';
         itemEl.innerText = t("system.infoCanWarnKarl");
+        inventoryItems.appendChild(itemEl);
+    }
+
+    if (persistentState.information.revengeImminent) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-red-900/50 border border-red-500 text-red-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.infoRevengeImminent");
         inventoryItems.appendChild(itemEl);
     }
 }
@@ -432,8 +440,10 @@ function processMove(r, c) {
         const isAssistantTime = currentTime === "СУМЕРКИ" || currentTime === "ВЕЧЕР";
 
         if (!killed.C && isCharlieTime) {
-            addLog(t("base.charlieKilled"), "text-magenta-500 font-bold");
+            addLog(t("base.charlieKilled"), "text-magenta-500");
+            addLog(t("base.revengeWarning"), "text-red-500 font-bold");
             updateKillStatus('C', r, c);
+            persistentState.information.revengeImminent = true;
             persistentState.information.charlieSpying = true;
             savePersistentState();
         } else if (!killed.C && isAssistantTime) {
