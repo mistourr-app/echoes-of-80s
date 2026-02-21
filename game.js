@@ -58,12 +58,14 @@ const defaultPersistentState = {
         fionaPCPassword: false,
         vanceServer: false,
         dameLocation: false,
+        laptopFound: false,
     },
     // Решенные задачи
     solvedClues: {
         labCode: false,
         fionaPCPassword: false,
         encryptionKey: false,
+        decryptionKey: false,
     },
     // Постоянная информация о мире
     information: {
@@ -73,6 +75,8 @@ const defaultPersistentState = {
         revengeImminent: false,
         dameLocationKnown: false,
         byteAmbushKnown: false,
+        offshoreAccountKnown: false,
+        rinoBetrayalKnown: false,
     }
 };
 let persistentState = JSON.parse(JSON.stringify(defaultPersistentState));
@@ -90,6 +94,11 @@ let sessionState = {
     // Для "Призрака в машине"
     vanceSecurityDisabled: false,
     chenKilledOnRow: -1,
+};
+let sessionStateSerpent = {
+    julianKilledOnRow: -1,
+    laptopAcquired: false,
+    rinoBetrayed: false,
 };
 
 function savePersistentState() {
@@ -157,6 +166,22 @@ function renderInventory() {
         itemEl.innerText = t("system.solvedEncryptionKey");
         inventoryItems.appendChild(itemEl);
     }
+
+    // --- Serpent's Coil ---
+    if (persistentState.solvedClues.decryptionKey) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-amber-900/50 border border-amber-500 text-amber-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.solvedLaptopKey");
+        inventoryItems.appendChild(itemEl);
+    }
+
+    if (sessionStateSerpent.laptopAcquired) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-blue-900/50 border border-blue-500 text-blue-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.clueLaptopFound");
+        inventoryItems.appendChild(itemEl);
+    }
+
     // 2. Рендерим АКТИВНЫЕ ЗАЦЕПКИ (синий цвет), только если они не решены
     // --- Echoes of 80s ---
     if (persistentState.clues.labCode && !persistentState.solvedClues.labCode) {
@@ -223,6 +248,20 @@ function renderInventory() {
         const itemEl = document.createElement('div');
         itemEl.className = 'py-1 px-2 bg-red-900/50 border border-red-500 text-red-300 rounded-sm text-[11px]';
         itemEl.innerText = t("system.infoByteAmbush");
+        inventoryItems.appendChild(itemEl);
+    }
+
+    // --- Serpent's Coil ---
+    if (persistentState.information.offshoreAccountKnown) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-zinc-800 border border-zinc-600 text-zinc-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.infoOffshoreAccount");
+        inventoryItems.appendChild(itemEl);
+    }
+    if (persistentState.information.rinoBetrayalKnown) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-red-900/50 border border-red-500 text-red-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.infoRinoBetrayal");
         inventoryItems.appendChild(itemEl);
     }
 
@@ -293,6 +332,33 @@ function getLivingEnemiesInCell(time, locIdx) {
         // Она появляется только если игрок знает где искать
         if (persistentState.information.dameLocationKnown && locIdx === 3 && time === "ВЕЧЕР") {
             enemies.push("D");
+        }
+    } else if (currentScenarioId === 'serpent') {
+        const isRinoAtNewsAgency = sessionStateSerpent.julianKilledOnRow === currentRow + 1;
+
+        // (M) Сенатор Морган
+        if (locIdx === 0 && (time === "ДЕНЬ" || time === "СУМЕРКИ" || time === "ВЕЧЕР")) {
+            // Если Рино предал, он тоже в Мэрии вечером
+            if (time === "ВЕЧЕР" && sessionStateSerpent.rinoBetrayed) {
+                // Не добавляем Моргана, так как Рино его уже убил. Добавляем только Рино.
+            } else {
+                enemies.push("M");
+            }
+        }
+
+        // (J) Джулиан
+        if (locIdx === 1 && (time === "ДЕНЬ" || time === "ВЕЧЕР")) enemies.push("J");
+
+        // (S) "Спектр"
+        if (locIdx === 2 && (time === "СУМЕРКИ" || time === "НОЧЬ")) enemies.push("S");
+
+        // (R) Рино
+        if (isRinoAtNewsAgency && locIdx === 1) { // Рино идет за ноутбуком
+            enemies.push("R");
+        } else if (sessionStateSerpent.rinoBetrayed && time === "ВЕЧЕР" && locIdx === 0) { // Рино идет к Моргану
+            enemies.push("R");
+        } else if (locIdx === 3 && (time === "ДЕНЬ" || time === "НОЧЬ")) { // Стандартный патруль
+            enemies.push("R");
         }
     }
 
@@ -667,6 +733,74 @@ function processMove(r, c) {
         }
     }
 
+    // --- Логика для "Змеиного клубка" ---
+    if (currentScenarioId === 'serpent') {
+        if (c === 0) { // МЭРИЯ (M)
+            const hasMorganHere = activeEnemies.includes("M");
+            const hasRinoHere = activeEnemies.includes("R");
+
+            if (killed.M) {
+                addLog(t("city_hall.empty"), "text-zinc-500");
+            } else if (hasRinoHere && sessionStateSerpent.rinoBetrayed) {
+                // Рино пришел и убил Моргана. Игрок сражается с Рино.
+                addLog(t("city_hall.morganVsRino"), "text-amber-400 font-bold");
+                updateKillStatus('M', r, c); // Морган убит Рино
+                updateKillStatus('R', r, c); // Игрок убивает Рино
+            } else if (hasMorganHere) {
+                if (!killed.R) {
+                    // Рино жив и охраняет Моргана
+                    addLog(t("city_hall.morganSecure"), "text-red-500 font-bold");
+                    triggerGameOver(t("system.ruleBrokenDeath"));
+                    return;
+                } else {
+                    // Рино мертв, путь свободен
+                    addLog(t("killMessages.M"), "text-magenta-500 font-bold");
+                    updateKillStatus('M', r, c);
+                }
+            } else {
+                addLog(t("city_hall.empty"), "text-zinc-400");
+            }
+        } else if (c === 1) { // РЕДАКЦИЯ (J)
+            const hasJulianHere = activeEnemies.includes("J");
+            const hasRinoHere = activeEnemies.includes("R");
+
+            if (hasRinoHere) {
+                addLog(t("news_agency.rinoArrived"), "text-red-500 font-bold");
+                sessionStateSerpent.laptopAcquired = false; // Ноутбук утерян
+            } else if (killed.J) {
+                addLog(t("news_agency.empty"), "text-zinc-500");
+            } else if (hasJulianHere) {
+                addLog(t("killMessages.J"), "text-magenta-500 font-bold");
+                updateKillStatus('J', r, c);
+                sessionStateSerpent.julianKilledOnRow = r;
+                sessionStateSerpent.laptopAcquired = true;
+                renderInventory();
+            } else {
+                addLog(t("news_agency.empty"), "text-zinc-400");
+            }
+        } else if (c === 2) { // ДАТА-ЦЕНТР (S)
+            const hasSpectreHere = activeEnemies.includes("S");
+            if (killed.S) {
+                addLog(t("data_center.empty"), "text-zinc-500");
+            } else if (hasSpectreHere) {
+                if (sessionStateSerpent.laptopAcquired) {
+                    addLog(t("data_center.spectreInterrogation"), "text-amber-400 font-bold");
+                    persistentState.solvedClues.decryptionKey = true;
+                    persistentState.information.offshoreAccountKnown = true;
+                    savePersistentState();
+                } else {
+                    addLog(t("killMessages.S"), "text-magenta-500 font-bold");
+                }
+                updateKillStatus('S', r, c);
+            } else {
+                addLog(t("data_center.empty"), "text-zinc-400");
+            }
+        } else if (c === 3) { // ПРОМРАЙОН (R)
+            // Логика для Рино обрабатывается в getLivingEnemiesInCell и в Мэрии/Редакции
+            // Здесь только базовые взаимодействия
+        }
+    }
+
     // Если игрок не был на улицах в сумерках, но Карл был предупрежден, он всё равно умирает "за кадром"
     if (currentScenarioId === 'echoes') {
         if (sessionState.karlWarned && currentTime === "СУМЕРКИ" && c !== 2 && !killed.K) {
@@ -770,6 +904,11 @@ function resetGameSession() {
         vanceSecurityDisabled: false,
         chenKilledOnRow: -1,
     };
+    sessionStateSerpent = {
+        julianKilledOnRow: -1,
+        laptopAcquired: false,
+        rinoBetrayed: false,
+    };
 }
 
 function initGameForScenario(id) {
@@ -816,6 +955,11 @@ const scenarios = {
         locNames: ["Корп-Башня", "Дата-Центр", "Клиника", "Архив"],
         name: "Призрак в машине",
         targetKeys: ["V", "B", "C", "D"],
+    },
+    'serpent': {
+        locNames: ["Мэрия", "Редакция", "Дата-центр", "Промрайон"],
+        name: "Змеиный клубок",
+        targetKeys: ["M", "J", "S", "R"],
     }
 };
 
@@ -857,6 +1001,12 @@ window.onload = () => {
         if (!button) return;
 
         const scenarioId = button.dataset.scenarioId;
+        const scenarioName = scenarios[scenarioId].name;
+
+        // Добавляем кнопку в список, если ее там еще нет
+        if (!document.querySelector(`button[data-scenario-id="${scenarioId}"]`)) {
+             // Эта логика может быть расширена для динамического добавления сценариев
+        }
 
         // Принудительно очищаем сохранение для выбранного сценария перед запуском
         localStorage.removeItem(`echoesOf80s_save_${scenarioId}`);
