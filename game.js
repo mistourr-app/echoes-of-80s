@@ -58,7 +58,10 @@ const defaultPersistentState = {
         fionaPCPassword: false,
         vanceServer: false,
         dameLocation: false,
-        laptopFound: false,
+        // Chronos
+        heuristicAlgorithm: false,
+        betaDefenses: false,
+        gammaLure: false,
     },
     // Решенные задачи
     solvedClues: {
@@ -66,6 +69,8 @@ const defaultPersistentState = {
         fionaPCPassword: false,
         encryptionKey: false,
         decryptionKey: false,
+        heuristicAlgorithm: false,
+        gammaLure: false,
     },
     // Постоянная информация о мире
     information: {
@@ -77,6 +82,9 @@ const defaultPersistentState = {
         byteAmbushKnown: false,
         offshoreAccountKnown: false,
         rinoBetrayalKnown: false,
+        alphaLocationKnown: false,
+        betaLocationKnown: false,
+        gammaLocationKnown: false,
     }
 };
 let persistentState = JSON.parse(JSON.stringify(defaultPersistentState));
@@ -99,6 +107,9 @@ let sessionStateSerpent = {
     julianKilledOnRow: -1,
     laptopAcquired: false,
     rinoBetrayed: false,
+};
+let sessionStateChronos = {
+    betaDefensesDown: false,
 };
 
 function savePersistentState() {
@@ -175,6 +186,20 @@ function renderInventory() {
         inventoryItems.appendChild(itemEl);
     }
 
+    // --- Chronos Key ---
+    if (persistentState.solvedClues.heuristicAlgorithm) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-amber-900/50 border border-amber-500 text-amber-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.solvedHeuristicAlgorithm");
+        inventoryItems.appendChild(itemEl);
+    }
+    if (persistentState.solvedClues.gammaLure) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-amber-900/50 border border-amber-500 text-amber-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.solvedGammaLure");
+        inventoryItems.appendChild(itemEl);
+    }
+
     if (sessionStateSerpent.laptopAcquired) {
         const itemEl = document.createElement('div');
         itemEl.className = 'py-1 px-2 bg-blue-900/50 border border-blue-500 text-blue-300 rounded-sm text-[11px]';
@@ -212,6 +237,25 @@ function renderInventory() {
         inventoryItems.appendChild(itemEl);
     }
 
+    // --- Chronos Key ---
+    if (persistentState.clues.heuristicAlgorithm && !persistentState.solvedClues.heuristicAlgorithm) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-blue-900/50 border border-blue-500 text-blue-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.clueHeuristicAlgorithm");
+        inventoryItems.appendChild(itemEl);
+    }
+    if (persistentState.clues.betaDefenses && !sessionStateChronos.betaDefensesDown) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-blue-900/50 border border-blue-500 text-blue-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.clueBetaDefenses");
+        inventoryItems.appendChild(itemEl);
+    }
+    if (persistentState.clues.gammaLure && !persistentState.solvedClues.gammaLure) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-blue-900/50 border border-blue-500 text-blue-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.clueGammaLure");
+        inventoryItems.appendChild(itemEl);
+    }
 
     // 3. Рендерим ИНФОРМАЦИЮ (серый/белый цвет)
     // --- Echoes of 80s ---
@@ -265,10 +309,36 @@ function renderInventory() {
         inventoryItems.appendChild(itemEl);
     }
 
+    // --- Chronos Key ---
+    if (persistentState.information.alphaLocationKnown) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-zinc-800 border border-zinc-600 text-zinc-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.infoAlphaLocation");
+        inventoryItems.appendChild(itemEl);
+    }
+    if (persistentState.information.betaLocationKnown) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-zinc-800 border border-zinc-600 text-zinc-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.infoBetaLocation");
+        inventoryItems.appendChild(itemEl);
+    }
+    if (persistentState.information.gammaLocationKnown) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-zinc-800 border border-zinc-600 text-zinc-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.infoGammaLocation");
+        inventoryItems.appendChild(itemEl);
+    }
+
     if (sessionState.vanceSecurityDisabled) {
         const itemEl = document.createElement('div');
         itemEl.className = 'py-1 px-2 bg-blue-900/50 border border-blue-500 text-blue-300 rounded-sm text-[11px]';
         itemEl.innerText = t("system.infoVanceServerDisabled");
+        inventoryItems.appendChild(itemEl);
+    }
+    if (sessionStateChronos.betaDefensesDown) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'py-1 px-2 bg-blue-900/50 border border-blue-500 text-blue-300 rounded-sm text-[11px]';
+        itemEl.innerText = t("system.sessionBetaDefensesDown");
         inventoryItems.appendChild(itemEl);
     }
 }
@@ -360,6 +430,23 @@ function getLivingEnemiesInCell(time, locIdx) {
         } else if (locIdx === 3 && (time === "ДЕНЬ" || time === "НОЧЬ")) { // Стандартный патруль
             enemies.push("R");
         }
+    } else if (currentScenarioId === 'chronos') {
+        // (A) Альфа
+        if (locIdx === 0 && time === "ДЕНЬ") enemies.push("A");
+
+        // (B) Бета
+        if (locIdx === 1 && time === "НОЧЬ") enemies.push("B");
+
+        // (G) Гамма
+        if (locIdx === 2) {
+            if (time === "СУМЕРКИ") enemies.push("G"); // Стандартное появление для разведки
+            if (time === "ВЕЧЕР" && persistentState.solvedClues.gammaLure) enemies.push("G"); // Появление по приманке
+        }
+
+        // (O) Омега
+        const allFragmentsKilled = killed.A && killed.B && killed.G;
+        if (allFragmentsKilled && locIdx === 3) enemies.push("O");
+
     }
 
     return enemies.filter(e => !killed[e] && gameConfig.targetKeys.includes(e));
@@ -801,6 +888,78 @@ function processMove(r, c) {
         }
     }
 
+    // --- Логика для "Ключа Хроноса" ---
+    if (currentScenarioId === 'chronos') {
+        if (c === 0) { // УНИВЕРСИТЕТ (A)
+            const hasAlpha = activeEnemies.includes("A");
+            if (killed.A) {
+                addLog(t("university.empty"), "text-zinc-500");
+            } else if (hasAlpha) {
+                if (persistentState.solvedClues.heuristicAlgorithm) {
+                    addLog(t("chronos.university.alphaEncounterWithTool"), "text-magenta-500 font-bold");
+                    updateKillStatus('A', r, c);
+                } else {
+                    addLog(t("chronos.university.alphaEncounterNoTool"), "text-blue-400");
+                    if (!persistentState.information.alphaLocationKnown) {
+                        persistentState.information.alphaLocationKnown = true;
+                        persistentState.clues.heuristicAlgorithm = true;
+                        savePersistentState();
+                    }
+                }
+            } else if (currentTime === "ВЕЧЕР" && !persistentState.solvedClues.heuristicAlgorithm) {
+                addLog(t("chronos.university.findTool"), "text-amber-400 font-bold");
+                persistentState.solvedClues.heuristicAlgorithm = true;
+                savePersistentState();
+            } else {
+                addLog(t("university.empty"), "text-zinc-400");
+            }
+        } else if (c === 1) { // ВОЕННЫЙ КОМПЛЕКС (B)
+            const hasBeta = activeEnemies.includes("B");
+            if (killed.B) {
+                addLog(t("military_complex.empty"), "text-zinc-500");
+            } else if (hasBeta) {
+                if (sessionStateChronos.betaDefensesDown) {
+                    addLog(t("chronos.military_complex.betaEncounterWeak"), "text-magenta-500 font-bold");
+                    updateKillStatus('B', r, c);
+                } else {
+                    addLog(t("chronos.military_complex.betaEncounterSecure"), "text-blue-400");
+                    if (!persistentState.information.betaLocationKnown) {
+                        persistentState.information.betaLocationKnown = true;
+                        persistentState.clues.betaDefenses = true;
+                        savePersistentState();
+                    }
+                }
+            } else {
+                addLog(t("military_complex.empty"), "text-zinc-400");
+            }
+        } else if (c === 2) { // АРТ-ГАЛЕРЕЯ (G)
+            const hasGamma = activeEnemies.includes("G");
+            if (killed.G) {
+                addLog(t("art_gallery.empty"), "text-zinc-500");
+            } else if (hasGamma) {
+                if (persistentState.solvedClues.gammaLure) {
+                    addLog(t("chronos.art_gallery.gammaEncounterWithLure"), "text-magenta-500 font-bold");
+                    updateKillStatus('G', r, c);
+                } else {
+                    addLog(t("chronos.art_gallery.gammaEncounterNoLure"), "text-blue-400");
+                    if (!persistentState.information.gammaLocationKnown) {
+                        persistentState.information.gammaLocationKnown = true;
+                        persistentState.clues.gammaLure = true;
+                        savePersistentState();
+                    }
+                }
+            } else if (currentTime === "ДЕНЬ" && !persistentState.solvedClues.gammaLure) {
+                addLog(t("chronos.art_gallery.findLure"), "text-amber-400 font-bold");
+                persistentState.solvedClues.gammaLure = true;
+                savePersistentState();
+            } else {
+                addLog(t("art_gallery.empty"), "text-zinc-400");
+            }
+        } else if (c === 3) { // ЭНЕРГОСТАНЦИЯ (O)
+            // Логика для Омеги и перегрузки сети
+        }
+    }
+
     // Если игрок не был на улицах в сумерках, но Карл был предупрежден, он всё равно умирает "за кадром"
     if (currentScenarioId === 'echoes') {
         if (sessionState.karlWarned && currentTime === "СУМЕРКИ" && c !== 2 && !killed.K) {
@@ -909,6 +1068,9 @@ function resetGameSession() {
         laptopAcquired: false,
         rinoBetrayed: false,
     };
+    sessionStateChronos = {
+        betaDefensesDown: false,
+    };
 }
 
 function initGameForScenario(id) {
@@ -960,6 +1122,11 @@ const scenarios = {
         locNames: ["Мэрия", "Редакция", "Дата-центр", "Промрайон"],
         name: "Змеиный клубок",
         targetKeys: ["M", "J", "S", "R"],
+    },
+    'chronos': {
+        locNames: ["Университет", "Воен. комплекс", "Арт-галерея", "Энергостанция"],
+        name: "Ключ Хроноса",
+        targetKeys: ["A", "B", "G", "O"],
     }
 };
 
